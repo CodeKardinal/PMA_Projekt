@@ -1,12 +1,28 @@
 package com.example.pma_projekt;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -15,10 +31,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     int[][] Storage;
     boolean noWin = false;
 
+    private AdView bAd_Bottom;
+    private AdView bAd_Top;
+    private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111";
+
+    private InterstitialAd interstitial;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+
+        bAd_Bottom = findViewById(R.id.banner_bottom);
+        loadBannerAdd(bAd_Bottom);
+
+        bAd_Top = findViewById(R.id.banner_top);
+        loadAdaptiveBannerAd();
+
+        loadInterAd();
         
         b11 = findViewById(R.id.button_11);
         b12 = findViewById(R.id.button_12);
@@ -41,6 +77,114 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         b33.setOnClickListener(this);
 
         Storage = new int[3][3];
+    }
+
+    private void loadInterAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        // The mInterstitialAd reference will be null until
+                        // an ad is loaded.
+                        interstitial = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        // Handle the error
+                        interstitial = null;
+                    }
+                });
+    }
+    private void showInterAd(){
+        if (interstitial != null){
+            interstitial.setFullScreenContentCallback(new FullScreenContentCallback(){
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    // Called when fullscreen content is dismissed.
+                    Intent intent = new Intent (getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    // Called when fullscreen content failed to show.
+                }
+
+                @Override
+                public void onAdShowedFullScreenContent() {
+                    // Called when fullscreen content is shown.
+                    // Make sure to set your reference to null so you don't
+                    // show it a second time.
+                    interstitial = null;
+                }
+            });
+            interstitial.show(MainActivity.this);
+        } else {
+            Intent intent = new Intent (this, MainActivity.class);
+            startActivity(intent);
+        }
+    }
+
+    private void loadAdaptiveBannerAd() {
+        bAd_Top.setAdUnitId(AD_UNIT_ID);
+        AdSize adSize = getAdSize();
+        bAd_Top.setAdSize(adSize);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        bAd_Top.loadAd(adRequest);
+    }
+
+    private AdSize getAdSize() {
+        // Determine the screen width (less decorations) to use for the ad width.
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+
+        // Step 3 - Get adaptive ad size and return for setting on the ad view.
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
+    }
+
+
+    private void loadBannerAdd(AdView banner) {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        banner.loadAd(adRequest);
+
+        banner.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
+                // Code to be executed when an ad finishes loading.
+            }
+
+            @Override
+            public void onAdFailedToLoad(LoadAdError adError) {
+                // Code to be executed when an ad request fails.
+            }
+
+            @Override
+            public void onAdOpened() {
+                // Code to be executed when an ad opens an overlay that
+                // covers the screen.
+            }
+
+            @Override
+            public void onAdClicked() {
+                // Code to be executed when the user clicks on an ad.
+            }
+
+            @Override
+            public void onAdClosed() {
+                // Code to be executed when the user is about to return
+                // to the app after tapping on an ad.
+            }
+        });
     }
 
     @Override
@@ -150,8 +294,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             Toast.makeText(getApplicationContext().getApplicationContext(), "O gewinnt", Toast.LENGTH_LONG).show();
         }
-        Intent intent = new Intent (this, MainActivity.class);
-        startActivity(intent);
+        /*Intent intent = new Intent (this, MainActivity.class);
+        startActivity(intent);*/
+        showInterAd();
         this.finish();
 
     }
