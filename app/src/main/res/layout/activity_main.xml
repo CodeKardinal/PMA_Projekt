@@ -8,11 +8,14 @@
     android:orientation="vertical">
 
 
-    <com.google.android.gms.ads.AdView
-        android:id="@+id/banner_top"
+    <FrameLayout
+        android:id="@+id/ad_view_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_alignParentBottom="true">
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -107,6 +110,13 @@
             android:textSize="36sp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/button_reward"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:text="Keine Werbung für die nächsten 3 Spiele" />
+
     <com.google.android.gms.ads.AdView
         android:id="@+id/banner_bottom"
         android:layout_width="match_parent"
@@ -115,4 +125,5 @@
         android:layout_centerHorizontal="true"
         app:adSize="BANNER"
         app:adUnitId="ca-app-pub-3940256099942544/6300978111"></com.google.android.gms.ads.AdView>
+
 </LinearLayout>

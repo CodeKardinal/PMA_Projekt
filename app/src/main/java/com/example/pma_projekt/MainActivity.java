@@ -3,12 +3,14 @@ package com.example.pma_projekt;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.ads.AdError;
@@ -19,43 +21,48 @@ import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.OnUserEarnedRewardListener;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    Button b11, b12, b13, b21, b22, b23, b31, b32, b33;
+    Button b11, b12, b13, b21, b22, b23, b31, b32, b33, b_reward;
     String xo = "O";
     int[][] Storage;
     boolean noWin = false;
 
     private AdView bAd_Bottom;
-    private AdView bAd_Top;
-    private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111";
+    private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741";
+    private FrameLayout adContainerView;
+    private AdView adView;
 
     private InterstitialAd interstitial;
+    private RewardedAd mRewardedAd;
+    int games;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Intent intent = getIntent();
+        games = intent.getIntExtra("games", 0);
+
+
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
             }
         });
-
         bAd_Bottom = findViewById(R.id.banner_bottom);
-        loadBannerAdd(bAd_Bottom);
 
-        bAd_Top = findViewById(R.id.banner_top);
-        loadAdaptiveBannerAd();
-
-        loadInterAd();
-        
         b11 = findViewById(R.id.button_11);
         b12 = findViewById(R.id.button_12);
         b13 = findViewById(R.id.button_13);
@@ -65,7 +72,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         b31 = findViewById(R.id.button_31);
         b32 = findViewById(R.id.button_32);
         b33 = findViewById(R.id.button_33);
-        
+
+        b_reward = findViewById(R.id.button_reward);
+        b_reward.setOnClickListener(v -> showRewardAd());
+        adContainerView = findViewById(R.id.ad_view_container);
+
         b11.setOnClickListener(this);
         b12.setOnClickListener(this);
         b13.setOnClickListener(this);
@@ -77,7 +88,84 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         b33.setOnClickListener(this);
 
         Storage = new int[3][3];
+
+        if(games>0){
+            b_reward.setVisibility(View.GONE);
+        }
+
+        // Since we're loading the banner based on the adContainerView size, we need to wait until this
+        // view is laid out before we can get the width.
+        adContainerView.post(new Runnable() {
+            @Override
+            public void run() {
+                loadAdaptiveBannerAd();
+            }
+        });
+        loadBannerAdd(bAd_Bottom);
+        loadInterAd();
+        loadRewardAd();
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+
+    }
+
+
+    private void loadRewardAd() {
+        FullScreenContentCallback fullScreenContentCallback =
+                new FullScreenContentCallback() {
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+                        // Code to be invoked when the ad showed full screen content.
+                    }
+
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        mRewardedAd = null;
+                        // Code to be invoked when the ad dismissed full screen content.
+                    }
+                };
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        RewardedAd.load(this, "ca-app-pub-3940256099942544/5224354917",
+                adRequest, new RewardedAdLoadCallback() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        // Handle the error.
+                        mRewardedAd = null;
+                    }
+
+                    @Override
+                    public void onAdLoaded(@NonNull RewardedAd rewardedAd) {
+                        mRewardedAd = rewardedAd;
+                    }
+                });
+
+    }
+
+    private void showRewardAd(){
+        if (mRewardedAd != null) {
+            Activity activityContext = MainActivity.this;
+            mRewardedAd.show(activityContext, new OnUserEarnedRewardListener() {
+                @Override
+                public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
+                    // Handle the reward.
+                    //int rewardAmount = rewardItem.getAmount();
+                    //String rewardType = rewardItem.getType();
+                    games = 3;
+                    b_reward.setVisibility(View.GONE);
+                }
+            });
+        } else {
+            b_reward.setVisibility(View.GONE);
+            games = 1;
+        }
+    }
+
 
     private void loadInterAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
@@ -99,42 +187,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
     }
     private void showInterAd(){
-        if (interstitial != null){
-            interstitial.setFullScreenContentCallback(new FullScreenContentCallback(){
-                @Override
-                public void onAdDismissedFullScreenContent() {
-                    // Called when fullscreen content is dismissed.
-                    Intent intent = new Intent (getApplicationContext(), MainActivity.class);
-                    startActivity(intent);
-                }
+            if (interstitial != null) {
+                interstitial.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        // Called when fullscreen content is dismissed.
+                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                        startActivity(intent);
+                    }
 
-                @Override
-                public void onAdFailedToShowFullScreenContent(AdError adError) {
-                    // Called when fullscreen content failed to show.
-                }
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                        // Called when fullscreen content failed to show.
+                    }
 
-                @Override
-                public void onAdShowedFullScreenContent() {
-                    // Called when fullscreen content is shown.
-                    // Make sure to set your reference to null so you don't
-                    // show it a second time.
-                    interstitial = null;
-                }
-            });
-            interstitial.show(MainActivity.this);
-        } else {
-            Intent intent = new Intent (this, MainActivity.class);
-            startActivity(intent);
-        }
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+                        // Called when fullscreen content is shown.
+                        // Make sure to set your reference to null so you don't
+                        // show it a second time.
+                        interstitial = null;
+                    }
+                });
+                interstitial.show(MainActivity.this);
+            } else {
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+            }
     }
 
     private void loadAdaptiveBannerAd() {
-        bAd_Top.setAdUnitId(AD_UNIT_ID);
+        // Create an ad request.
+        adView = new AdView(this);
+        adView.setAdUnitId(AD_UNIT_ID);
+        adContainerView.removeAllViews();
+        adContainerView.addView(adView);
+
         AdSize adSize = getAdSize();
-        bAd_Top.setAdSize(adSize);
+        adView.setAdSize(adSize);
 
         AdRequest adRequest = new AdRequest.Builder().build();
-        bAd_Top.loadAd(adRequest);
+
+        // Start loading the ad in the background.
+        adView.loadAd(adRequest);
     }
 
     private AdSize getAdSize() {
@@ -143,12 +238,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         DisplayMetrics outMetrics = new DisplayMetrics();
         display.getMetrics(outMetrics);
 
-        float widthPixels = outMetrics.widthPixels;
         float density = outMetrics.density;
 
-        int adWidth = (int) (widthPixels / density);
+        float adWidthPixels = adContainerView.getWidth();
 
-        // Step 3 - Get adaptive ad size and return for setting on the ad view.
+        // If the ad hasn't been laid out, default to the full screen width.
+        if (adWidthPixels == 0) {
+            adWidthPixels = outMetrics.widthPixels;
+        }
+
+        int adWidth = (int) (adWidthPixels / density);
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
@@ -294,10 +393,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             Toast.makeText(getApplicationContext().getApplicationContext(), "O gewinnt", Toast.LENGTH_LONG).show();
         }
-        /*Intent intent = new Intent (this, MainActivity.class);
-        startActivity(intent);*/
-        showInterAd();
+
+
+        if(games == 0) {
+            b_reward.setVisibility(View.VISIBLE);
+            showInterAd();
+        }else {
+            b_reward.setVisibility(View.GONE);
+            games--;
+            Intent intent = new Intent (this, MainActivity.class);
+            intent.putExtra("games", games);
+            startActivity(intent);
+
+        }
         this.finish();
+
 
     }
 }
