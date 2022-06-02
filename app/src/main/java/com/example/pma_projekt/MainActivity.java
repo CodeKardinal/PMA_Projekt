@@ -14,6 +14,7 @@ import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.widget.Button;
@@ -54,6 +55,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	int games;
 
 
+	private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+		@Override
+		public void onAvailable(@NonNull Network network) {
+			super.onAvailable(network);
+			Toast.makeText(getApplicationContext(), "Network available", Toast.LENGTH_LONG).show();
+			try {
+				b_reward.setVisibility(View.VISIBLE);
+			}catch (Exception e){
+
+			}
+		}
+
+		@Override
+		public void onLost(@NonNull Network network) {
+			super.onLost(network);
+			Toast.makeText(getApplicationContext(), "Network not available", Toast.LENGTH_LONG).show();
+			try {
+				b_reward.setVisibility(View.GONE);
+			}catch (Exception e){
+
+			}
+		}
+
+		@Override
+		public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
+			super.onCapabilitiesChanged(network, networkCapabilities);
+			final boolean unmetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+		}
+	};
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -61,6 +93,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 		Intent intent = getIntent();
 		games = intent.getIntExtra("games", 0);
+
+		NetworkRequest networkRequest = new NetworkRequest.Builder()
+				.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+				.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+				.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+				.build();
+
+		ConnectivityManager connectivityManager =
+				(ConnectivityManager) getSystemService(ConnectivityManager.class);
+		connectivityManager.requestNetwork(networkRequest, networkCallback);
 
 
 		MobileAds.initialize(this, new OnInitializationCompleteListener() {
@@ -120,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	@Override
 	protected void onStart() {
 		super.onStart();
+
 
 		// Since we're loading the banner based on the adContainerView size, we need to wait until this
 		// view is laid out before we can get the width.
