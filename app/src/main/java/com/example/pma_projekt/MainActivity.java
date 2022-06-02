@@ -40,8 +40,10 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-	Button b11, b12, b13, b21, b22, b23, b31, b32, b33, b_reward;
+	Button btn, b11, b12, b13, b21, b22, b23, b31, b32, b33, b_reward;
+	private static int[] BUTTONS;
 	String xo = "O";
+	String empty = "";
 	int[][] Storage;
 	boolean noWin = false;
 
@@ -52,14 +54,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 	private InterstitialAd interstitial;
 	private RewardedAd mRewardedAd;
-	int games;
-
+	int games = 0;
 
 	private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
 		@Override
 		public void onAvailable(@NonNull Network network) {
 			super.onAvailable(network);
-			Toast.makeText(getApplicationContext(), "Network available", Toast.LENGTH_LONG).show();
 			try {
 				b_reward.setVisibility(View.VISIBLE);
 			}catch (Exception e){
@@ -70,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		@Override
 		public void onLost(@NonNull Network network) {
 			super.onLost(network);
-			Toast.makeText(getApplicationContext(), "Network not available", Toast.LENGTH_LONG).show();
 			try {
 				b_reward.setVisibility(View.GONE);
 			}catch (Exception e){
@@ -91,9 +90,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		Intent intent = getIntent();
-		games = intent.getIntExtra("games", 0);
-
 		NetworkRequest networkRequest = new NetworkRequest.Builder()
 				.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
 				.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
@@ -104,13 +100,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				(ConnectivityManager) getSystemService(ConnectivityManager.class);
 		connectivityManager.requestNetwork(networkRequest, networkCallback);
 
-
 		MobileAds.initialize(this, new OnInitializationCompleteListener() {
 			@Override
 			public void onInitializationComplete(InitializationStatus initializationStatus) {
 			}
 		});
+
 		bAd_Bottom = findViewById(R.id.banner_bottom);
+
+		BUTTONS = new int[]{
+				R.id.button_11,
+				R.id.button_12,
+				R.id.button_13,
+				R.id.button_21,
+				R.id.button_22,
+				R.id.button_23,
+				R.id.button_31,
+				R.id.button_32,
+				R.id.button_33,
+		};
 
 		b11 = findViewById(R.id.button_11);
 		b12 = findViewById(R.id.button_12);
@@ -158,12 +166,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	}
 
 
-
 	@Override
 	protected void onStart() {
 		super.onStart();
-
-
 		// Since we're loading the banner based on the adContainerView size, we need to wait until this
 		// view is laid out before we can get the width.
 		adContainerView.post(new Runnable() {
@@ -175,8 +180,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		loadBannerAdd(bAd_Bottom);
 		loadInterAd();
 		loadRewardAd();
-
-
 	}
 
 
@@ -210,8 +213,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 						mRewardedAd = rewardedAd;
 					}
 				});
-
 	}
+
 
 	private void showRewardAd() {
 		if (mRewardedAd != null) {
@@ -253,14 +256,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				});
 	}
 
+
 	private void showInterAd() {
 		if (interstitial != null) {
 			interstitial.setFullScreenContentCallback(new FullScreenContentCallback() {
 				@Override
 				public void onAdDismissedFullScreenContent() {
 					// Called when fullscreen content is dismissed.
-					Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-					startActivity(intent);
 				}
 
 				@Override
@@ -283,6 +285,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		}
 	}
 
+
 	private void loadAdaptiveBannerAd() {
 		// Create an ad request.
 		adView = new AdView(this);
@@ -298,6 +301,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		// Start loading the ad in the background.
 		adView.loadAd(adRequest);
 	}
+
 
 	private AdSize getAdSize() {
 		// Determine the screen width (less decorations) to use for the ad width.
@@ -352,6 +356,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			}
 		});
 	}
+
 
 	@Override
 	public void onClick(View v) {
@@ -461,12 +466,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		}
 		if (games == 0) {
 			showInterAd();
+			b_reward.setVisibility(View.VISIBLE);
 		} else {
 			games--;
-			Intent intent = new Intent(this, MainActivity.class);
-			intent.putExtra("games", games);
-			startActivity(intent);
 		}
-		this.finish();
+		clearField();
+	}
+
+
+	private void clearField(){
+		for (int x = 0; x <= 2; x++) {
+			for (int y = 0; y <= 2; y++) {
+				Storage[x][y] = 0;
+			}
+		}
+		for(int i = 0; i< BUTTONS.length; i++){
+			btn = findViewById(BUTTONS[i]);
+			btn.setText(empty);
+		}
 	}
 }
