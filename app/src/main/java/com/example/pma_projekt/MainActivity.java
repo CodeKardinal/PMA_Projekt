@@ -7,7 +7,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -95,11 +99,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		if (games > 0) {
 			b_reward.setVisibility(View.GONE);
 		}
-		else if (!connectionCheck()){
-				b_reward.setVisibility(View.GONE);
 
+		try {
+			Network currentNetwork = connectivityManager.getActiveNetwork();
+			NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(currentNetwork);
+
+			if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+				b_reward.setVisibility(View.VISIBLE);
+			} else {
+				b_reward.setVisibility(View.GONE);
 			}
 		}
+		catch(Exception e){
+			b_reward.setVisibility(View.GONE);
+		}
+	}
+
 
 
 	@Override
@@ -410,16 +425,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			startActivity(intent);
 		}
 		this.finish();
-	}
-
-	private boolean connectionCheck(){
-		ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-		if(connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
-				connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
-			// connected to a network
-			return true;
-		}
-		else
-			return false;
 	}
 }
