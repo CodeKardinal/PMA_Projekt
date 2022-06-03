@@ -28,7 +28,8 @@
             android:layout_height="match_parent"
             android:layout_marginRight="5sp"
             android:layout_weight="1"
-            android:textSize="36sp" />
+            android:textSize="36sp"
+            tools:ignore="SpeakableTextPresentCheck" />
 
         <Button
             android:id="@+id/button_12"

@@ -4,13 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
 import android.net.ConnectivityManager;
-import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -21,7 +17,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -54,16 +49,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 	private InterstitialAd interstitial;
 	private RewardedAd mRewardedAd;
-	int games = 0;
+	int games = 1;
 
 	private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+		// Checks network connection and changes the visibility of the reward button depending on it
 		@Override
 		public void onAvailable(@NonNull Network network) {
 			super.onAvailable(network);
 			try {
 				b_reward.setVisibility(View.VISIBLE);
 			}catch (Exception e){
-
 			}
 		}
 
@@ -73,14 +68,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			try {
 				b_reward.setVisibility(View.GONE);
 			}catch (Exception e){
-
 			}
 		}
 
 		@Override
 		public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
 			super.onCapabilitiesChanged(network, networkCapabilities);
-			final boolean unmetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
 		}
 	};
 
@@ -120,15 +113,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				R.id.button_33,
 		};
 
-		b11 = findViewById(R.id.button_11);
-		b12 = findViewById(R.id.button_12);
-		b13 = findViewById(R.id.button_13);
-		b21 = findViewById(R.id.button_21);
-		b22 = findViewById(R.id.button_22);
-		b23 = findViewById(R.id.button_23);
-		b31 = findViewById(R.id.button_31);
-		b32 = findViewById(R.id.button_32);
-		b33 = findViewById(R.id.button_33);
+		b11 = findViewById(BUTTONS[0]);
+		b12 = findViewById(BUTTONS[1]);
+		b13 = findViewById(BUTTONS[2]);
+		b21 = findViewById(BUTTONS[3]);
+		b22 = findViewById(BUTTONS[4]);
+		b23 = findViewById(BUTTONS[5]);
+		b31 = findViewById(BUTTONS[6]);
+		b32 = findViewById(BUTTONS[7]);
+		b33 = findViewById(BUTTONS[8]);
 
 		b_reward = findViewById(R.id.button_reward);
 		b_reward.setOnClickListener(v -> showRewardAd());
@@ -169,14 +162,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	@Override
 	protected void onStart() {
 		super.onStart();
-		// Since we're loading the banner based on the adContainerView size, we need to wait until this
-		// view is laid out before we can get the width.
+
+		// Waiting for adContainerView to be created to get the width
 		adContainerView.post(new Runnable() {
 			@Override
 			public void run() {
 				loadAdaptiveBannerAd();
 			}
 		});
+		// Load and show BannerAd
+		// Preload InterstitialAd and RewardAd
 		loadBannerAdd(bAd_Bottom);
 		loadInterAd();
 		loadRewardAd();
@@ -184,17 +179,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private void loadRewardAd() {
+		// Preload RewardAd
 		FullScreenContentCallback fullScreenContentCallback =
 				new FullScreenContentCallback() {
 					@Override
-					public void onAdShowedFullScreenContent() {
-						// Code to be invoked when the ad showed full screen content.
-					}
-
-					@Override
 					public void onAdDismissedFullScreenContent() {
 						mRewardedAd = null;
-						// Code to be invoked when the ad dismissed full screen content.
 					}
 				};
 
@@ -203,28 +193,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		RewardedAd.load(this, "ca-app-pub-3940256099942544/5224354917",
 				adRequest, new RewardedAdLoadCallback() {
 					@Override
-					public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-						// Handle the error.
-						mRewardedAd = null;
+					public void onAdLoaded(@NonNull RewardedAd rewardedAd) {
+						// mRewardedAd reference = null until ad is loaded
+						mRewardedAd = rewardedAd;
 					}
 
 					@Override
-					public void onAdLoaded(@NonNull RewardedAd rewardedAd) {
-						mRewardedAd = rewardedAd;
+					public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+						mRewardedAd = null;
 					}
 				});
 	}
 
 
 	private void showRewardAd() {
+		// Show preloaded RewardAd
 		if (mRewardedAd != null) {
 			Activity activityContext = MainActivity.this;
 			mRewardedAd.show(activityContext, new OnUserEarnedRewardListener() {
 				@Override
 				public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
-					// Handle the reward.
-					//int rewardAmount = rewardItem.getAmount();
-					//String rewardType = rewardItem.getType();
+					// Handle Reward Item and set RewardButton invisible
 					games = 3;
 					b_reward.setVisibility(View.GONE);
 				}
@@ -233,24 +222,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			b_reward.setVisibility(View.GONE);
 			games = 1;
 		}
+		loadRewardAd();	//Preload new RewardAd after RewardAd was shown
 	}
 
 
 	private void loadInterAd() {
+		// Preload InterstitialAd
 		AdRequest adRequest = new AdRequest.Builder().build();
 
 		InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest,
 				new InterstitialAdLoadCallback() {
 					@Override
 					public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-						// The mInterstitialAd reference will be null until
-						// an ad is loaded.
+						// mInterstitialAd reference = null until ad is loaded
 						interstitial = interstitialAd;
 					}
 
 					@Override
 					public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-						// Handle the error
 						interstitial = null;
 					}
 				});
@@ -258,36 +247,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private void showInterAd() {
+		// Show Preloaded InterstitialAd
 		if (interstitial != null) {
 			interstitial.setFullScreenContentCallback(new FullScreenContentCallback() {
-				@Override
-				public void onAdDismissedFullScreenContent() {
-					// Called when fullscreen content is dismissed.
-				}
-
-				@Override
-				public void onAdFailedToShowFullScreenContent(AdError adError) {
-					// Called when fullscreen content failed to show.
-				}
 
 				@Override
 				public void onAdShowedFullScreenContent() {
-					// Called when fullscreen content is shown.
-					// Make sure to set your reference to null so you don't
-					// show it a second time.
+					// Called when fullscreen content is shown
+					// Reference set to null so Ad isn´t shown a second time
 					interstitial = null;
 				}
 			});
 			interstitial.show(MainActivity.this);
-		} else {
-			Intent intent = new Intent(this, MainActivity.class);
-			startActivity(intent);
 		}
 	}
 
 
 	private void loadAdaptiveBannerAd() {
-		// Create an ad request.
+		// Get ContainerView Size, set BannerAd size, show and load the BannerAd
 		adView = new AdView(this);
 		adView.setAdUnitId(AD_UNIT_ID);
 		adContainerView.removeAllViews();
@@ -298,13 +275,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 		AdRequest adRequest = new AdRequest.Builder().build();
 
-		// Start loading the ad in the background.
-		adView.loadAd(adRequest);
+
+		adView.loadAd(adRequest);	// Loading ad in background
 	}
 
 
 	private AdSize getAdSize() {
-		// Determine the screen width (less decorations) to use for the ad width.
+		// Determine the screen width
 		Display display = getWindowManager().getDefaultDisplay();
 		DisplayMetrics outMetrics = new DisplayMetrics();
 		display.getMetrics(outMetrics);
@@ -313,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 		float adWidthPixels = adContainerView.getWidth();
 
-		// If the ad hasn't been laid out, default to the full screen width.
+		// If the ad hasn't been laid out, default to the full screen width
 		if (adWidthPixels == 0) {
 			adWidthPixels = outMetrics.widthPixels;
 		}
@@ -324,35 +301,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private void loadBannerAdd(AdView banner) {
+		// Load and Show BannerAd
 		AdRequest adRequest = new AdRequest.Builder().build();
 		banner.loadAd(adRequest);
 
 		banner.setAdListener(new AdListener() {
 			@Override
-			public void onAdLoaded() {
-				// Code to be executed when an ad finishes loading.
-			}
-
-			@Override
 			public void onAdFailedToLoad(LoadAdError adError) {
 				// Code to be executed when an ad request fails.
-			}
-
-			@Override
-			public void onAdOpened() {
-				// Code to be executed when an ad opens an overlay that
-				// covers the screen.
-			}
-
-			@Override
-			public void onAdClicked() {
-				// Code to be executed when the user clicks on an ad.
-			}
-
-			@Override
-			public void onAdClosed() {
-				// Code to be executed when the user is about to return
-				// to the app after tapping on an ad.
 			}
 		});
 	}
@@ -414,6 +370,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private boolean input(int x, int y) {
+		// Mapping the buttons into an array
 		boolean fieldFree = false;
 		x = x - 1;
 		y = y - 1;
@@ -433,6 +390,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private boolean checkEnd() {
+		// Check if game has ended and return True or False
 		int usedField = 0;
 		for (int x = 0; x <= 2; x++) {
 			for (int y = 0; y <= 2; y++) {
@@ -457,6 +415,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 	private void gameFinish() {
+		// Check who won and display Toast
+		// Show InterstitialAd
+		// Clear the game and restart
 		if (noWin) {
 			Toast.makeText(getApplicationContext().getApplicationContext(), "Unentschieden", Toast.LENGTH_LONG).show();
 		} else if (xo.equals("X")) {
@@ -466,6 +427,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		}
 		if (games == 0) {
 			showInterAd();
+			loadInterAd();
 			b_reward.setVisibility(View.VISIBLE);
 		} else {
 			games--;
@@ -480,8 +442,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				Storage[x][y] = 0;
 			}
 		}
-		for(int i = 0; i< BUTTONS.length; i++){
-			btn = findViewById(BUTTONS[i]);
+		for (int button : BUTTONS) {
+			btn = findViewById(button);
 			btn.setText(empty);
 		}
 	}
